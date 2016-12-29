@@ -26,10 +26,6 @@ cl2 = clahe.apply(grayscale)
 cv2.imshow("CLAHE2", cl2)
 cv2.waitKey(0)
 
-cl3 = clahe.apply(gradient)
-cv2.imshow("CLAHE3", cl3)
-cv2.waitKey(0)
-
 diff = grayscale - gradient
 cv2.imshow("Diff", diff)
 cv2.waitKey(0)
@@ -38,28 +34,49 @@ remove = cv2.medianBlur(diff, 5)
 cv2.imshow("remove noise", remove)
 cv2.waitKey(0)
 
-ret, thresh = cv2.threshold(cl2, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-cv2.imshow("After proccess", thresh)
-cv2.waitKey(0)
-
 # NOISE REMOVAL
 kernel = np.ones((2,2), np.uint8)
-closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+closing = cv2.morphologyEx(remove, cv2.MORPH_CLOSE, kernel, iterations=2)
 cv2.imshow("After CLOSE", closing)
 cv2.waitKey(0)
 
-cv2.findContours(remove, contours, hierarchy, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, Point(0, 0));
-/// Approximate contours
-vector<Rect> boundRect(contours.size());
-for (unsigned int i = 0; i < contours.size(); i++)
-{   //identify bounding box
-    boundRect[i] = boundingRect(contours[i]);
-}
-for (unsigned int i = 0; i < contours.size(); i++)
-{
+inverse = (255 - remove)
 
-    if ((boundRect[i].area() < //enter your area here))
-    {
-        src_gray(boundRect[i])=//set it to whatever value you want;
-    }
-}
+# Setup SimpleBlobDetector parameters.
+params = cv2.SimpleBlobDetector_Params()
+
+# Filter by Area.
+params.filterByArea = True
+params.minArea = 2
+params.maxArea = 100
+
+# Filter by Circularity
+params.filterByCircularity = True
+params.minCircularity = 0.1
+
+# Filter by Convexity
+params.filterByConvexity = True
+params.minConvexity = 0.3
+
+# Filter by Inertia
+params.filterByInertia = True
+params.minInertiaRatio = 0.01
+
+# Create a detector with the parameters
+ver = (cv2.__version__).split('.')
+if int(ver[0]) < 3:
+    detector = cv2.SimpleBlobDetector(params)
+else:
+    detector = cv2.SimpleBlobDetector_create(params)
+
+# Detect blobs.
+keypoints = detector.detect(inverse)
+
+# Draw detected blobs as red circles.
+# cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+im_with_keypoints = cv2.drawKeypoints(inverse, keypoints, np.array([]), (0, 0, 255),
+                                      cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+# Show keypoints
+cv2.imshow("Keypoints", im_with_keypoints)
+cv2.waitKey(0)
