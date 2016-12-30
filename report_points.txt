@@ -1,0 +1,9 @@
+If there was a way to get a plain background then we could have done a background subtraction, but the downside would then be that the background should remain the same for all the images; but because this is not the case, there would be slight differences in each of the images.
+
+Tried Laplacian, but Laplacian returns too much noise from the gradient, which then becomes indistinguishable
+
+Contouring was ineffective
+
+Tried various filters, including CLAHE but increasing the contrast affected the background, creating more noise or entire patches of missing information
+
+Using CLOSE transformation, i.e. dilation would have made non-connected components now connected.

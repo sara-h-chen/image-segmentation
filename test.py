@@ -22,9 +22,9 @@ clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(60, 60))
 # equ = cv2.equalizeHist(grayscale)
 # cv2.imshow("Equalized", equ)
 # cv2.waitKey(0)
-cl2 = clahe.apply(grayscale)
-cv2.imshow("CLAHE2", cl2)
-cv2.waitKey(0)
+# cl2 = clahe.apply(grayscale)
+# cv2.imshow("CLAHE2", cl2)
+# cv2.waitKey(0)
 
 diff = grayscale - gradient
 cv2.imshow("Diff", diff)
@@ -35,13 +35,13 @@ cv2.imshow("remove noise", remove)
 cv2.waitKey(0)
 
 # NOISE REMOVAL
-kernel = np.ones((2,2), np.uint8)
-closing = cv2.morphologyEx(remove, cv2.MORPH_CLOSE, kernel, iterations=2)
-cv2.imshow("After CLOSE", closing)
-cv2.waitKey(0)
+# kernel = np.ones((2,2), np.uint8)
+# closing = cv2.morphologyEx(remove, cv2.MORPH_CLOSE, kernel, iterations=2)
+# cv2.imshow("After CLOSE", closing)
+# cv2.waitKey(0)
 
 inverse = (255 - remove)
-
+#
 # Setup SimpleBlobDetector parameters.
 params = cv2.SimpleBlobDetector_Params()
 
@@ -80,3 +80,8 @@ im_with_keypoints = cv2.drawKeypoints(inverse, keypoints, np.array([]), (0, 0, 2
 # Show keypoints
 cv2.imshow("Keypoints", im_with_keypoints)
 cv2.waitKey(0)
+
+for point in keypoints:
+    point.class_id = 99
+    print (point.pt)
+    print (point.class_id)
