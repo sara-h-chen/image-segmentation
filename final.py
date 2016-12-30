@@ -2,25 +2,22 @@ import numpy as np
 import cv2
 
 img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A05_w2_9F329A58-2D6D-42E2-9E6D-E23ACBACE9E0.tif')
-# Load into 8-bit
+# LOAD INTO 8-BIT
 grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# Gives an approximation of the illumination effect
+# GIVES AN APPROXIMATION OF THE ILLUMINATION EFFECT
 gradient = cv2.GaussianBlur(grayscale, (55,55), 0)
-
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(60, 60))
-
+# REMOVE ILLUMINATION
 diff = grayscale - gradient
 
-# Try to remove as much noise as possible
+# TRY TO REMOVE AS MUCH NOISE AS POSSIBLE
 remove = cv2.medianBlur(diff, 5)
-
 inverse = (255 - remove)
 
 ###########################################################################
 #                      IDENTIFIES NOISE BLOBS                             #
 ###########################################################################
 
-# Setup SimpleBlobDetector parameters
+# SETUP SIMPLEBLOBDETECTOR PARAMETERS
 params = cv2.SimpleBlobDetector_Params()
 
 params.filterByArea = True
@@ -36,7 +33,7 @@ params.minConvexity = 0.3
 params.filterByInertia = True
 params.minInertiaRatio = 0.01
 
-# Create a detector with the parameters
+# CREATE A DETECTOR WITH THE PARAMETERS
 ver = (cv2.__version__).split('.')
 if int(ver[0]) < 3:
     detector = cv2.SimpleBlobDetector(params)
@@ -45,15 +42,30 @@ else:
 
 keypoints = detector.detect(inverse)
 
-# Draw detected blobs as red circles
-# cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-im_with_keypoints = cv2.drawKeypoints(inverse, keypoints, np.array([]), (0, 0, 255),
-                                      cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-
-# Show keypoints
-cv2.imshow("Keypoints", im_with_keypoints)
-cv2.waitKey(0)
-
-# Marks the blobs that have been identified as noise
+# MARKS THE BLOBS THAT HAVE BEEN IDENTIFIED AS NOISE
 for point in keypoints:
     point.class_id = 99
+
+# GET ALL EDGES ON THE IMAGE
+inverse = cv2.bitwise_not(inverse)
+canny = cv2.Canny(inverse, 100, 200)
+
+# CREATE MASK TO FILL IN NOISE BLOBS
+canny2 = cv2.copyMakeBorder(canny, 1, 1, 1, 1, cv2.BORDER_REPLICATE)
+for point in keypoints:
+    int_point = (int(point.pt[0]), int(point.pt[1]))
+    cv2.floodFill(inverse, canny2, int_point, (0,0,0))
+
+kernel = np.ones((2,2), np.uint8)
+
+# ERODE THE REMAINING NOISE BLOBS
+erosion = cv2.erode(inverse, kernel, iterations=2)
+cv2.imshow("eroded", erosion)
+cv2.waitKey(0)
+
+#########################################################################
+
+# DILATE THE REMAINING COMPONENTS TO GET THE SURE BACKGROUND
+sure_bg = cv2.dilate(erosion, kernel, iterations=5)
+cv2.imshow("dilated", sure_bg)
+cv2.waitKey(0)
