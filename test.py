@@ -1,17 +1,23 @@
 import numpy as np
 import cv2
-import Colourer as df
 
 # LOAD IMAGE
-img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A05_w2_9F329A58-2D6D-42E2-9E6D-E23ACBACE9E0.tif')
-# print (len(img.shape))
+img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A08_w2_ACB0586C-4D00-4464-8544-702449BD2495.tif')
+print (img.shape[2])
 grayscale = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 # print(len(grayscale.shape))
 gradient = cv2.GaussianBlur(grayscale, (55,55), 0)
-# cv2.imshow("grayscale", grayscale)
-# cv2.waitKey(0)
+cv2.imshow("grayscale", grayscale)
+cv2.waitKey(0)
 
-# clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(60, 60))
+no = cv2.bitwise_not(grayscale)
+cv2.imshow("negated", no)
+cv2.waitKey(0)
+
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(60, 60))
+filtered = clahe.apply(grayscale)
+cv2.imshow("filtered", filtered)
+cv2.waitKey(0)
 
 diff = grayscale - gradient
 # cv2.imshow("Diff", diff)
@@ -97,55 +103,55 @@ print (len(sure_bg.shape))
 
 inversedAgain = cv2.bitwise_not(sure_bg)
 
-# # Setup SimpleBlobDetector parameters.
-# params = cv2.SimpleBlobDetector_Params()
-#
-# # Filter by Area.
-# params.filterByArea = True
-# params.minArea = 50
-# params.maxArea = 9999
-#
-# # Filter by Convexity
-# params.filterByConvexity = True
-# params.minConvexity = 0.01
-#
-# # Filter by Inertia
-# params.filterByInertia = True
-# params.minInertiaRatio = 0.01
-#
-# # Create a detector with the parameters
-# ver = (cv2.__version__).split('.')
-# if int(ver[0]) < 3:
-#     detector2 = cv2.SimpleBlobDetector(params)
-# else:
-#     detector2 = cv2.SimpleBlobDetector_create(params)
-#
-# # Detect blobs.
-# keypoints2 = detector2.detect(inversedAgain)
-# totalKeypoints = detector2.detect(sure_bg)
-#
-# # Draw detected blobs as red circles.
-# # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-# im_with_keypoints2 = cv2.drawKeypoints(sure_fg, totalKeypoints, np.array([]), (0, 0, 255),
-#                                       cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-# im_with_keypoints3 = cv2.drawKeypoints(inversedAgain, keypoints2, np.array([]), (0, 0, 255),
-#                                       cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-#
-# # Show keypoints
-# cv2.imshow("Keypoints", im_with_keypoints2)
-# cv2.waitKey(0)
-# cv2.imshow("Keypoints", im_with_keypoints3)
-# cv2.waitKey(0)
-#
-# for key in keypoints2:
-#     if key not in totalKeypoints:
-#         totalKeypoints.append(key)
-#
-# print (len(totalKeypoints))
+# Setup SimpleBlobDetector parameters.
+params = cv2.SimpleBlobDetector_Params()
 
-surf = cv2.xfeatures2d.SURF_create(15000)
-kp, des = surf.detectAndCompute(sure_bg, None)
-print(len(kp))
-img2 = cv2.drawKeypoints(sure_bg, kp, None, (255,0,0), 4)
-cv2.imshow("plotted", img2)
+# Filter by Area.
+params.filterByArea = True
+params.minArea = 100
+params.maxArea = 9999
+
+# Filter by Convexity
+params.filterByConvexity = True
+params.minConvexity = 0.01
+
+# Filter by Inertia
+params.filterByInertia = True
+params.minInertiaRatio = 0.01
+
+# Create a detector with the parameters
+ver = (cv2.__version__).split('.')
+if int(ver[0]) < 3:
+    detector2 = cv2.SimpleBlobDetector(params)
+else:
+    detector2 = cv2.SimpleBlobDetector_create(params)
+
+# Detect blobs.
+keypoints2 = detector2.detect(inversedAgain)
+totalKeypoints = detector2.detect(sure_bg)
+
+# Draw detected blobs as red circles.
+# cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+im_with_keypoints2 = cv2.drawKeypoints(sure_fg, totalKeypoints, np.array([]), (0, 0, 255),
+                                      cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+im_with_keypoints3 = cv2.drawKeypoints(inversedAgain, keypoints2, np.array([]), (0, 0, 255),
+                                      cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+# Show keypoints
+cv2.imshow("Keypoints", im_with_keypoints2)
 cv2.waitKey(0)
+cv2.imshow("Keypoints", im_with_keypoints3)
+cv2.waitKey(0)
+
+for key in keypoints2:
+    if key not in totalKeypoints:
+        totalKeypoints.append(key)
+
+print (len(totalKeypoints))
+#
+# surf = cv2.xfeatures2d.SURF_create(15000)
+# kp, des = surf.detectAndCompute(sure_bg, None)
+# print(len(kp))
+# img2 = cv2.drawKeypoints(sure_bg, kp, None, (255,0,0), 4)
+# cv2.imshow("plotted", img2)
+# cv2.waitKey(0)
