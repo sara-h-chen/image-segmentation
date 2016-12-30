@@ -7,3 +7,7 @@ Contouring was ineffective
 Tried various filters, including CLAHE but increasing the contrast affected the background, creating more noise or entire patches of missing information
 
 Using CLOSE transformation, i.e. dilation would have made non-connected components now connected.
+
+Watershed does not work, because Distance Transform is unable to detect the worms due to their shape
+
+SURF was used but it doesn't provide much information and although it allows keypoints to be extracted, not entirely useful
