@@ -8,6 +8,8 @@ Tried various filters, including CLAHE but increasing the contrast affected the 
 
 Using CLOSE transformation, i.e. dilation would have made non-connected components now connected.
 
-Watershed does not work, because Distance Transform is unable to detect the worms due to their shape
+Watershed does not work, because Distance Transform is unable to detect the worms due to their shape; the error margin is high due to the object being narrow.
 
 SURF was used but it doesn't provide much information and although it allows keypoints to be extracted, not entirely useful
+
+Too narrow that connected components cannot detect the object.

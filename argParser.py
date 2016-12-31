@@ -1,6 +1,6 @@
 import argparse
 
-parser = argparse.ArgumentParser(description="Carries out image segmentation using the Watershed Algorithm. More information at https://en.wikipedia.org/wiki/Watershed_(image_processing)")
+parser = argparse.ArgumentParser(description="Carries out image segmentation based on shape and blob detection")
 parser.add_argument('--foo', help=('foo help'))
 
 # >>> parser.add_argument('integers', metavar='N', type=int, nargs='+',

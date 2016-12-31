@@ -102,6 +102,10 @@ sure_bg = cv2.dilate(sure_fg, kernel, iterations=3)
 print (len(sure_bg.shape))
 
 inversedAgain = cv2.bitwise_not(sure_bg)
+cv2.imshow("iv", inversedAgain)
+cv2.waitKey(0)
+cv2.imshow("sure_fg", sure_fg)
+cv2.waitKey(0)
 
 # Setup SimpleBlobDetector parameters.
 params = cv2.SimpleBlobDetector_Params()
@@ -132,9 +136,9 @@ totalKeypoints = detector2.detect(sure_bg)
 
 # Draw detected blobs as red circles.
 # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-im_with_keypoints2 = cv2.drawKeypoints(sure_fg, totalKeypoints, np.array([]), (0, 0, 255),
+im_with_keypoints2 = cv2.drawKeypoints(sure_fg, keypoints2, np.array([]), (0, 0, 255),
                                       cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-im_with_keypoints3 = cv2.drawKeypoints(inversedAgain, keypoints2, np.array([]), (0, 0, 255),
+im_with_keypoints3 = cv2.drawKeypoints(inversedAgain, totalKeypoints, np.array([]), (0, 0, 255),
                                       cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
 # Show keypoints
@@ -154,4 +158,37 @@ print (len(totalKeypoints))
 # print(len(kp))
 # img2 = cv2.drawKeypoints(sure_bg, kp, None, (255,0,0), 4)
 # cv2.imshow("plotted", img2)
+# cv2.waitKey(0)
+
+# # Finding sure foreground area
+# dist_transform = cv2.distanceTransform(sure_fg,cv2.DIST_L2,5)
+# ret, sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
+#
+# cv2.imshow("dist transform", sure_fg)
+# cv2.waitKey(0)
+
+# # Finding unknown region
+# sure_fg = np.uint8(sure_fg)
+# unknown = cv2.subtract(sure_bg,sure_fg)
+# cv2.imshow("unknown area", unknown)
+# cv2.waitKey(0)
+
+# Marker labelling
+# ret, markers = cv2.connectedComponents(sure_fg)
+# cv2.imshow("borders", markers)
+# cv2.waitKey(0)
+#
+# # Add one to all labels so that background is not 0, but 1
+# markers = markers + 1
+#
+# # Now mark the region of unknown with 0
+# markers[sure_fg==255] = 0
+#
+# inverse = cv2.cvtColor(inverse, cv2.COLOR_GRAY2BGR)
+# cv2.imshow("inverse", sure_fg)
+# cv2.waitKey(0)
+#
+# markers = cv2.watershed(inverse, markers)
+# inverse[markers == -1] = [0,0,255]
+# cv2.imshow("watershed", inverse)
 # cv2.waitKey(0)
