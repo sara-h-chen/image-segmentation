@@ -2,11 +2,41 @@ import numpy as np
 import cv2
 
 
-def removeNoiseBlobs(inverse):
+##############################################################################
+#              PROCESSES IMAGES WITH ILLUMINATED BACKGROUND                  #
+##############################################################################
 
-    ###########################################################################
-    #                      IDENTIFIES NOISE BLOBS                             #
-    ###########################################################################
+def processIlluminatedBg(grayscale):
+
+    # GIVES AN APPROXIMATION OF THE ILLUMINATION EFFECT
+    gradient = cv2.GaussianBlur(grayscale, (55, 55), 0)
+    # REMOVE ILLUMINATION
+    diff = grayscale - gradient
+
+    # TRY TO REMOVE AS MUCH NOISE AS POSSIBLE
+    remove = cv2.medianBlur(diff, 5)
+    inverse = (255 - remove)
+
+    return removeNoiseBlobs(inverse)
+
+
+##############################################################################
+#                   PROCESSES IMAGES WITH DARK BACKGROUND                    #
+##############################################################################
+
+def processDarkBg(grayscale):
+
+    # INCREASES CONTRAST ON IMAGE WITH HISTOGRAM EQUALIZATION
+    equalize = cv2.equalizeHist(grayscale)
+
+    return removeNoiseBlobs(equalize)
+
+
+##############################################################################
+#                         IDENTIFIES NOISE BLOBS                             #
+##############################################################################
+
+def removeNoiseBlobs(inverse):
 
     # SETUP SIMPLEBLOBDETECTOR PARAMETERS
     params = cv2.SimpleBlobDetector_Params()
@@ -57,23 +87,6 @@ def removeNoiseBlobs(inverse):
 
     return (sure_fg, sure_bg)
 
-
-##############################################################################
-#              PROCESSES IMAGES WITH ILLUMINATED BACKGROUND                  #
-##############################################################################
-
-def processIlluminatedBg(grayscale):
-
-    # GIVES AN APPROXIMATION OF THE ILLUMINATION EFFECT
-    gradient = cv2.GaussianBlur(grayscale, (55, 55), 0)
-    # REMOVE ILLUMINATION
-    diff = grayscale - gradient
-
-    # TRY TO REMOVE AS MUCH NOISE AS POSSIBLE
-    remove = cv2.medianBlur(diff, 5)
-    inverse = (255 - remove)
-
-    return removeNoiseBlobs(inverse)
 
 ##############################################################################
 #                    DETECT WORMS TO GET THEIR KEYPOINTS                     #
@@ -136,11 +149,21 @@ def getKeypoints(backgrounds):
     for i in range(0, len(totalKeypoints)):
         totalKeypoints[i].class_id = i + 1
 
+    return totalKeypoints
+
+
+############################################################################
+#                             MAIN METHOD                                  #
+############################################################################
+
 if __name__ == '__main__':
 
     img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A05_w2_9F329A58-2D6D-42E2-9E6D-E23ACBACE9E0.tif')
+    imgdark = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A01_w1_9E84F49F-1B25-4E7E-8040-D1BB2D7E73EA.tif')
     # LOAD INTO BINARY
     grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     separatedbackgrounds = processIlluminatedBg(grayscale)
     getKeypoints(separatedbackgrounds)
-
+    grey = cv2.cvtColor(imgdark, cv2.COLOR_BGR2GRAY)
+    darkbackground = processDarkBg(grey)
+    getKeypoints(darkbackground)

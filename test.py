@@ -2,35 +2,32 @@ import numpy as np
 import cv2
 
 # LOAD IMAGE
-img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A08_w2_ACB0586C-4D00-4464-8544-702449BD2495.tif')
-print (img.shape[2])
+img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A01_w1_9E84F49F-1B25-4E7E-8040-D1BB2D7E73EA.tif')
 grayscale = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-# print(len(grayscale.shape))
-gradient = cv2.GaussianBlur(grayscale, (55,55), 0)
 cv2.imshow("grayscale", grayscale)
 cv2.waitKey(0)
 
-no = cv2.bitwise_not(grayscale)
-cv2.imshow("negated", no)
-cv2.waitKey(0)
 
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(60, 60))
-filtered = clahe.apply(grayscale)
-cv2.imshow("filtered", filtered)
-cv2.waitKey(0)
-
-diff = grayscale - gradient
-# cv2.imshow("Diff", diff)
+# clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(60, 60))
+# filtered = clahe.apply(grayscale)
+# cv2.imshow("filtered", filtered)
 # cv2.waitKey(0)
 
-remove = cv2.medianBlur(diff, 5)
+equ = cv2.equalizeHist(grayscale)
+cv2.imshow("non-CLAHE", equ)
+cv2.waitKey(0)
+ret, thresh = cv2.threshold(equ, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+cv2.imshow("Otsu's binarization", thresh)
+cv2.waitKey(0)
+
+# remove = cv2.medianBlur(diff, 5)
 # cv2.imshow("remove noise", remove)
 # cv2.waitKey(0)
 
 # NOISE REMOVAL
 kernel = np.ones((2,2), np.uint8)
 
-inverse = (255 - remove)
+# inverse = (255 - remove)
 
 # Setup SimpleBlobDetector parameters.
 params = cv2.SimpleBlobDetector_Params()
@@ -60,11 +57,11 @@ else:
     detector = cv2.SimpleBlobDetector_create(params)
 
 # Detect blobs.
-keypoints = detector.detect(inverse)
+keypoints = detector.detect(equ)
 
 # Draw detected blobs as red circles.
 # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-im_with_keypoints = cv2.drawKeypoints(inverse, keypoints, np.array([]), (0, 0, 255),
+im_with_keypoints = cv2.drawKeypoints(equ, keypoints, np.array([]), (0, 0, 255),
                                       cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 #
 # # Show keypoints
@@ -76,12 +73,7 @@ for point in keypoints:
     # print (point.pt)
     # print (point.class_id)
 
-# Sure background area
-im_with_keypoints = cv2.bitwise_not(im_with_keypoints)
-# cv2.imshow("Inverted", im_with_keypoints)
-# cv2.waitKey(0)
-
-inverse = cv2.bitwise_not(inverse)
+inverse = cv2.bitwise_not(equ)
 canny = cv2.Canny(inverse, 100, 200)
 # cv2.imshow("edges", canny)
 # cv2.waitKey(0)
@@ -100,6 +92,8 @@ sure_bg = cv2.dilate(sure_fg, kernel, iterations=3)
 # cv2.imshow("dilated", sure_bg)
 # cv2.waitKey(0)
 print (len(sure_bg.shape))
+cv2.imshow("before inverse", sure_bg)
+cv2.waitKey(0)
 
 inversedAgain = cv2.bitwise_not(sure_bg)
 cv2.imshow("iv", inversedAgain)
@@ -152,43 +146,3 @@ for key in keypoints2:
         totalKeypoints.append(key)
 
 print (len(totalKeypoints))
-#
-# surf = cv2.xfeatures2d.SURF_create(15000)
-# kp, des = surf.detectAndCompute(sure_bg, None)
-# print(len(kp))
-# img2 = cv2.drawKeypoints(sure_bg, kp, None, (255,0,0), 4)
-# cv2.imshow("plotted", img2)
-# cv2.waitKey(0)
-
-# # Finding sure foreground area
-# dist_transform = cv2.distanceTransform(sure_fg,cv2.DIST_L2,5)
-# ret, sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
-#
-# cv2.imshow("dist transform", sure_fg)
-# cv2.waitKey(0)
-
-# # Finding unknown region
-# sure_fg = np.uint8(sure_fg)
-# unknown = cv2.subtract(sure_bg,sure_fg)
-# cv2.imshow("unknown area", unknown)
-# cv2.waitKey(0)
-
-# Marker labelling
-# ret, markers = cv2.connectedComponents(sure_fg)
-# cv2.imshow("borders", markers)
-# cv2.waitKey(0)
-#
-# # Add one to all labels so that background is not 0, but 1
-# markers = markers + 1
-#
-# # Now mark the region of unknown with 0
-# markers[sure_fg==255] = 0
-#
-# inverse = cv2.cvtColor(inverse, cv2.COLOR_GRAY2BGR)
-# cv2.imshow("inverse", sure_fg)
-# cv2.waitKey(0)
-#
-# markers = cv2.watershed(inverse, markers)
-# inverse[markers == -1] = [0,0,255]
-# cv2.imshow("watershed", inverse)
-# cv2.waitKey(0)
