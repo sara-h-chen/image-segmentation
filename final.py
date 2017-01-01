@@ -1,11 +1,10 @@
 #################################################################################
-#
+#  # TODO: Fill up documentation here
 #
 # ----------------------------------------------------------------------------- #
 # REFERENCES: http://docs.opencv.org/trunk/d3/db4/tutorial_py_watershed.html    #
 #             https://www.learnopencv.com/blob-detection-using-opencv-python-c/ #
 #################################################################################
-
 
 import numpy as np
 import cv2
@@ -39,6 +38,21 @@ def processDarkBg(grayscale):
     equalize = cv2.equalizeHist(grayscale)
 
     return removeNoiseBlobs(equalize)
+
+
+##############################################################################
+#            BINARY THRESHOLDING FOR IMAGES WITH DARK BACKGROUND             #
+##############################################################################
+
+def binaryOtsu(backgrounds):
+
+    sure_fg = backgrounds[0]
+
+    ret, thresh = cv2.threshold(sure_fg, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # APPLY CLOSE TO REDUCE NOISE
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((2, 2), np.uint8))
+
+    return thresh
 
 
 ##############################################################################
@@ -94,9 +108,13 @@ def removeNoiseBlobs(inverse):
 
     # ERODE THE REMAINING NOISE BLOBS AND GET THE CONFIRMED FOREGROUND
     sure_fg = cv2.erode(inverse, kernel, iterations=2)
+    cv2.imshow("sure_fg", sure_fg)
+    cv2.waitKey(0)
 
     # DILATE THE REMAINING SHAPES TO FACILITATE SHAPE DETECTION
     sure_bg = cv2.dilate(sure_fg, kernel, iterations=3)
+    cv2.imshow("sure_bg", sure_bg)
+    cv2.waitKey(0)
 
     return (sure_fg, sure_bg)
 
@@ -144,7 +162,7 @@ def getKeypoints(backgrounds):
     light_on_dark_keypoints = cv2.drawKeypoints(inverseForConvexity, totalKeypoints, np.array([]), (0, 0, 255),
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-    # SHOW KEYPOINTS
+    # UNCOMMENT HERE TO SHOW KEYPOINTS
     cv2.imshow("Keypoints", dark_on_light_keypoints)
     cv2.waitKey(0)
     cv2.imshow("Keypoints", light_on_dark_keypoints)
@@ -155,12 +173,35 @@ def getKeypoints(backgrounds):
         if key not in totalKeypoints:
             totalKeypoints.append(key)
 
-    # MARK EACH KEYPOINT AS DISTINCT OBJECT
+    # LABEL EACH KEYPOINT AS DISTINCT OBJECT
     for i in range(0, len(totalKeypoints)):
         totalKeypoints[i].class_id = i + 1
 
     return totalKeypoints
 
+
+##############################################################################
+#        APPLY CANNY TO IDENTIFY WORMS WITH DISCONTINUOUS BORDERS            #
+##############################################################################
+
+def detectDead(binarized):
+
+    canny = cv2.Canny(binarized, 100, 200)
+    # IDENTIFY ALL BORDERS IN THE CANNY IMAGE
+    im2, contours, hierarchy = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    for cnt in contours:
+        # IGNORE WORMS WITH CONTINUOUS BORDERS & NOISE BLOBS
+        if not 10 < len(cnt) < 35:
+            continue
+
+        ellipse = cv2.fitEllipse(cnt)
+        discontinuousPatches = cv2.ellipse(canny, ellipse, (255,255,255), 2)
+
+    cv2.imshow("results", discontinuousPatches)
+    cv2.waitKey(0)
+
+    return discontinuousPatches
 
 ############################################################################
 #                             MAIN METHOD                                  #
@@ -168,12 +209,27 @@ def getKeypoints(backgrounds):
 
 if __name__ == '__main__':
 
+    # TODO: Parse the name of the file to decide which route to take
     img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A05_w2_9F329A58-2D6D-42E2-9E6D-E23ACBACE9E0.tif')
-    imgdark = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A01_w1_9E84F49F-1B25-4E7E-8040-D1BB2D7E73EA.tif')
+
     # LOAD INTO BINARY
     grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     separatedbackgrounds = processIlluminatedBg(grayscale)
-    getKeypoints(separatedbackgrounds)
+    # TODO: Get the filename and print it here together
+    print ("Worms found: " + str(len(getKeypoints(separatedbackgrounds))))
+    try:
+        # TAKE ONLY THE SURE FOREGROUND
+        detectDead(separatedbackgrounds[0])
+    except UnboundLocalError:
+        print("No dead worms found")
+
+
+    imgdark = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A01_w1_9E84F49F-1B25-4E7E-8040-D1BB2D7E73EA.tif')
+
     grey = cv2.cvtColor(imgdark, cv2.COLOR_BGR2GRAY)
     darkbackground = processDarkBg(grey)
-    getKeypoints(darkbackground)
+    print("Worms found: " + str(len(getKeypoints(darkbackground))))
+    try:
+        detectDead(binaryOtsu(darkbackground))
+    except UnboundLocalError:
+        print("No dead worms found")

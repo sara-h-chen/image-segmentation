@@ -148,14 +148,14 @@ kernel = np.ones((2,2), np.uint8)
 #
 # print (len(totalKeypoints))
 
-trial = cv2.imread('test_file.png')
-# trial = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A13_w1_52E35EC6-FA1E-4F30-A575-F5F7553F95B4.tif')
+# trial = cv2.imread('cannysure_bg.png')
+trial = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A13_w1_52E35EC6-FA1E-4F30-A575-F5F7553F95B4.tif')
 trial = cv2.cvtColor(trial, cv2.COLOR_RGB2GRAY)
-# ret, thresh = cv2.threshold(trial, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-# cv2.imshow("binarized", thresh)
-# cv2.waitKey(0)
+ret, thresh = cv2.threshold(trial, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+cv2.imshow("binarized", thresh)
+cv2.waitKey(0)
 # thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-canny = cv2.Canny(trial, 100, 200)
+canny = cv2.Canny(thresh, 100, 200)
 cv2.imshow("canny2", canny)
 cv2.waitKey(0)
 
@@ -179,7 +179,7 @@ for cnt in contours:
     # if len(cnt) < 100:
     #     continue
 
-    if not 5 < len(cnt) < 100:
+    if not 10 < len(cnt) < 100:
         continue
 
     ellipse = cv2.fitEllipse(cnt)
