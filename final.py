@@ -1,3 +1,12 @@
+#################################################################################
+#
+#
+# ----------------------------------------------------------------------------- #
+# REFERENCES: http://docs.opencv.org/trunk/d3/db4/tutorial_py_watershed.html    #
+#             https://www.learnopencv.com/blob-detection-using-opencv-python-c/ #
+#################################################################################
+
+
 import numpy as np
 import cv2
 
@@ -41,16 +50,20 @@ def removeNoiseBlobs(inverse):
     # SETUP SIMPLEBLOBDETECTOR PARAMETERS
     params = cv2.SimpleBlobDetector_Params()
 
+    # FILTER BY AREA
     params.filterByArea = True
     params.minArea = 2
     params.maxArea = 150
 
+    # FILTER BY CIRCULARITY
     params.filterByCircularity = True
     params.minCircularity = 0.1
 
+    # FILTER BY CONVEXITY
     params.filterByConvexity = True
     params.minConvexity = 0.3
 
+    # FILTER BY INERTIA
     params.filterByInertia = True
     params.minInertiaRatio = 0.01
 
@@ -79,10 +92,10 @@ def removeNoiseBlobs(inverse):
 
     kernel = np.ones((2, 2), np.uint8)
 
-    # ERODE THE REMAINING NOISE BLOBS AND GET THE SURE FOREGROUND
+    # ERODE THE REMAINING NOISE BLOBS AND GET THE CONFIRMED FOREGROUND
     sure_fg = cv2.erode(inverse, kernel, iterations=2)
 
-    # DILATE THE REMAINING SHAPES
+    # DILATE THE REMAINING SHAPES TO FACILITATE SHAPE DETECTION
     sure_bg = cv2.dilate(sure_fg, kernel, iterations=3)
 
     return (sure_fg, sure_bg)
@@ -103,16 +116,13 @@ def getKeypoints(backgrounds):
     # SETUP SIMPLEBLOBDETECTOR WITH PARAMETERS
     params = cv2.SimpleBlobDetector_Params()
 
-    # FILTER BY AREA
     params.filterByArea = True
     params.minArea = 100
     params.maxArea = 9999
 
-    # FILTER BY CONVEXITY
     params.filterByConvexity = True
     params.minConvexity = 0.01
 
-    # FILTER BY INERTIA
     params.filterByInertia = True
     params.minInertiaRatio = 0.01
 
@@ -127,7 +137,7 @@ def getKeypoints(backgrounds):
     keypointsOnLight = wormDetector.detect(inverseForConvexity)
     totalKeypoints = wormDetector.detect(sure_bg)
 
-    # DRAW DETECTED SHAPES AS RED CIRCLES
+    # DRAW ON DETECTED SHAPED WITH RED CIRCLES
     # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ENSURES THE SIZE OF THE CIRCLE CORRESPONDS TO THE SIZE OF BLOB
     dark_on_light_keypoints = cv2.drawKeypoints(sure_fg, keypointsOnLight, np.array([]), (0, 0, 255),
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)

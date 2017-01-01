@@ -1,15 +1,27 @@
+IMAGE SEGMENTATION
+
+### On illuminated backgrounds:
 If there was a way to get a plain background then we could have done a background subtraction, but the downside would then be that the background should remain the same for all the images; but because this is not the case, there would be slight differences in each of the images.
 
-Tried Laplacian, but Laplacian returns too much noise from the gradient, which then becomes indistinguishable
-
-Contouring was ineffective
+Tried Laplacian, but Laplacian returns too much noise from the gradient of the background, which then becomes indistinguishable from the worms
 
 Tried various filters, including CLAHE but increasing the contrast affected the background, creating more noise or entire patches of missing information
 
-Using CLOSE transformation, i.e. dilation would have made non-connected components now connected.
+### On dark backgrounds:
+After histogram equalization, the gradients on the image can be used to gain more information. High intensity blobs can be identified as an overlap cluster. 
+
+##############################################################
+
+Contouring was ineffective, and neither was connectedComponents.
 
 Watershed does not work, because Distance Transform is unable to detect the worms due to their shape; the error margin is high due to the object being narrow.
 
 SURF was used but it doesn't provide much information and although it allows keypoints to be extracted, not entirely useful
 
-Too narrow that connected components cannot detect the object.
+WORMS DETECTION
+
+Too narrow that connected components cannot detect the object. Although the closing transformation was used to try and overcome the problem of overlapping worms, when the worms are dilated so that they can be detected by the blob detector, the effects are negated.
+
+Steps have been taken to reduce the effects of clustering worms, i.e. when they have touching borders. As much as possible, eroding and the CLOSE transformation were used to separate touching borders.
+
+The algorithm is able to detect worms that are connected at a single point at most times, but is unable to detect them as separate objects when they are connected by an edge. Without the use of external packages, it is extremely difficult to map the borders of the objects in the image. With the images with the dark backgrounds, the gradients can be used to more accurately pinpoint the worms and the overlap between the worms. However, with binary images, the blob detector identifies the worms with overlaps as a single object.

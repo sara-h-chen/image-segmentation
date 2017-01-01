@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import random
 
 # LOAD IMAGE
 img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A01_w1_9E84F49F-1B25-4E7E-8040-D1BB2D7E73EA.tif')
@@ -146,3 +147,48 @@ for key in keypoints2:
         totalKeypoints.append(key)
 
 print (len(totalKeypoints))
+
+trial = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A13_w1_52E35EC6-FA1E-4F30-A575-F5F7553F95B4.tif')
+trial = cv2.cvtColor(trial, cv2.COLOR_RGB2GRAY)
+ret, thresh = cv2.threshold(trial, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+# cv2.imshow("binarized", thresh)
+# cv2.waitKey(0)
+thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+canny = cv2.Canny(thresh, 100, 200)
+cv2.imshow("canny2", canny)
+cv2.waitKey(0)
+
+resultingMatrix = img
+
+im2, contours, hierarchy = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+for i in range(0, len(contours)):
+    drawn = cv2.drawContours(resultingMatrix, contours, i, (random.randrange(255), random.randrange(255),random.randrange(255)), 3)
+cv2.imshow("contoured", drawn)
+cv2.waitKey(0)
+
+surf = cv2.xfeatures2d.SURF_create(15000)
+kp, des = surf.detectAndCompute(thresh, None)
+# print(len(kp))
+
+# img2 = cv2.drawKeypoints(thresh, kp, None, (255,0,0), 4)
+# cv2.imshow("plotted", img2)
+# cv2.waitKey(0)
+
+# kp2, des2 = surf.detectAndCompute(sure_fg, None)
+# img3 = cv2.drawKeypoints(sure_fg, kp2, None, (255,0,0), 4)
+# cv2.imshow("on borders", img3)
+# cv2.waitKey(0)
+
+minLineLength = 300
+maxLineGap = 10
+
+try:
+    lines = cv2.HoughLinesP(canny, 1, np.pi/180, 15, minLineLength, maxLineGap)
+    for x in range(0, len(lines)):
+        for x1,y1,x2,y2 in lines[x]:
+            cv2.line(canny,(x1,y1),(x2,y2),(255,0,0),2)
+except TypeError:
+    print("No straight lines found")
+
+cv2.imshow("lines", canny)
+cv2.waitKey(0)
