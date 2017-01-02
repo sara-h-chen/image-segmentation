@@ -7,6 +7,7 @@
 #################################################################################
 
 import numpy as np
+import random
 import cv2
 
 
@@ -120,6 +121,32 @@ def removeNoiseBlobs(inverse):
 
 
 ##############################################################################
+#               GIVE SEPARATE COMPONENTS DISTINCT COLOURS                    #
+##############################################################################
+
+def segmentWithColors(backgrounds):
+
+    if len(backgrounds) == 2:
+        clearEdges = cv2.Canny(backgrounds[1], 100, 200)
+        cv2.imshow("Canny", clearEdges)
+        cv2.waitKey(0)
+    else:
+        clearEdges = cv2.Canny(backgrounds, 100, 200)
+        cv2.imshow("After Otsu", clearEdges)
+        cv2.waitKey(0)
+
+    coloredComponents = cv2.cvtColor(clearEdges, cv2.COLOR_GRAY2BGR)
+
+    image, contours, hierarchy = cv2.findContours(clearEdges, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    for i in range(0, len(contours)):
+        drawn = cv2.drawContours(coloredComponents, contours, i, (random.randrange(255), random.randrange(255), random.randrange(255)), 3)
+
+    cv2.imshow("contoured", drawn)
+    cv2.waitKey(0)
+
+
+##############################################################################
 #                    DETECT WORMS TO GET THEIR KEYPOINTS                     #
 ##############################################################################
 
@@ -215,6 +242,7 @@ if __name__ == '__main__':
     # LOAD INTO BINARY
     grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     separatedbackgrounds = processIlluminatedBg(grayscale)
+    segmentWithColors(separatedbackgrounds)
     # TODO: Get the filename and print it here together
     print ("Worms found: " + str(len(getKeypoints(separatedbackgrounds))))
     try:
@@ -228,6 +256,7 @@ if __name__ == '__main__':
 
     grey = cv2.cvtColor(imgdark, cv2.COLOR_BGR2GRAY)
     darkbackground = processDarkBg(grey)
+    segmentWithColors(binaryOtsu(darkbackground))
     print("Worms found: " + str(len(getKeypoints(darkbackground))))
     try:
         detectDead(binaryOtsu(darkbackground))
