@@ -7,6 +7,7 @@
 #################################################################################
 
 import numpy as np
+import math
 import random
 import cv2
 
@@ -109,13 +110,13 @@ def removeNoiseBlobs(inverse):
 
     # ERODE THE REMAINING NOISE BLOBS AND GET THE CONFIRMED FOREGROUND
     sure_fg = cv2.erode(inverse, kernel, iterations=2)
-    cv2.imshow("sure_fg", sure_fg)
-    cv2.waitKey(0)
+    # cv2.imshow("SURE FOREGROUND", sure_fg)
+    # cv2.waitKey(0)
 
     # DILATE THE REMAINING SHAPES TO FACILITATE SHAPE DETECTION
     sure_bg = cv2.dilate(sure_fg, kernel, iterations=3)
-    cv2.imshow("sure_bg", sure_bg)
-    cv2.waitKey(0)
+    # cv2.imshow("SURE BACKGROUND", sure_bg)
+    # cv2.waitKey(0)
 
     return (sure_fg, sure_bg)
 
@@ -126,15 +127,17 @@ def removeNoiseBlobs(inverse):
 
 def segmentWithColors(backgrounds):
 
+    # IF DARK BACKGROUND, APPLY OTSU'S BINARIZATION
     if len(backgrounds) == 2:
         clearEdges = cv2.Canny(backgrounds[1], 100, 200)
-        cv2.imshow("Canny", clearEdges)
-        cv2.waitKey(0)
+        # cv2.imshow("EDGES AFTER CANNY", clearEdges)
+        # cv2.waitKey(0)
     else:
         clearEdges = cv2.Canny(backgrounds, 100, 200)
-        cv2.imshow("After Otsu", clearEdges)
-        cv2.waitKey(0)
+        # cv2.imshow("OTSU BINARIZATION APPLIED", clearEdges)
+        # cv2.waitKey(0)
 
+    # TURN IMAGE BACK INTO COLOR IMAGE
     coloredComponents = cv2.cvtColor(clearEdges, cv2.COLOR_GRAY2BGR)
 
     image, contours, hierarchy = cv2.findContours(clearEdges, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -142,7 +145,7 @@ def segmentWithColors(backgrounds):
     for i in range(0, len(contours)):
         drawn = cv2.drawContours(coloredComponents, contours, i, (random.randrange(255), random.randrange(255), random.randrange(255)), 3)
 
-    cv2.imshow("contoured", drawn)
+    cv2.imshow("SEGMENTATION WITH COLORED CONTOURS", drawn)
     cv2.waitKey(0)
 
 
@@ -190,9 +193,9 @@ def getKeypoints(backgrounds):
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
     # UNCOMMENT HERE TO SHOW KEYPOINTS
-    cv2.imshow("Keypoints", dark_on_light_keypoints)
+    cv2.imshow("KEYPOINTS", dark_on_light_keypoints)
     cv2.waitKey(0)
-    cv2.imshow("Keypoints", light_on_dark_keypoints)
+    cv2.imshow("IMAGE INVERSED TO FILTER FOR CONVEXITY", light_on_dark_keypoints)
     cv2.waitKey(0)
 
     # MERGE THE TWO KEYPOINT SETS
@@ -208,7 +211,41 @@ def getKeypoints(backgrounds):
 
 
 ##############################################################################
-#        APPLY CANNY TO IDENTIFY WORMS WITH DISCONTINUOUS BORDERS            #
+#         IDENTIFY OVERLAP/INTERSECTION BETWEEN CLUSTERED WORMS             #
+##############################################################################
+
+def identifyCluster(binarized):
+
+    # GET EDGES TO ANNOTATE ON
+    canny = cv2.Canny(binarized, 100, 200)
+
+    # APPLY SHI-TOMASI ALGORITHM TO FIND CORNERS
+    corners = cv2.goodFeaturesToTrack(binarized, 50, 0.4, 5)
+    corners = np.int0(corners)
+
+    for i in corners:
+        x, y = i.ravel()
+        circled = cv2.circle(canny, (x, y), 3, 255, -1)
+
+    cv2.imshow("IDENTIFIED CORNERS", circled)
+    cv2.waitKey(0)
+
+    # GET DISTANCE BETWEEN IDENTIFIED CORNERS
+    # IF CORNERS ARE CLOSE, THEY ARE LIKELY TO BE INTERSECTION POINTS
+    for a in corners:
+        for b in corners:
+            if 0 < math.sqrt(((a[0][0] - b[0][0]) * (a[0][0] - b[0][0])) + ((a[0][1] - b[0][1]) * (a[0][1] - b[0][1]))) < 10:
+                midpointX = (a[0][0] + b[0][0]) / 2
+                midpointY = (a[0][1] + b[0][1]) / 2
+                cv2.circle(circled, (midpointX, midpointY), 15, (255,255,255))
+                print ("CLOSE CORNERS: " + str(a[0]) + " & " + str(b[0]) + " suggests two worms are intersecting")
+
+    cv2.imshow("INTERSECTIONS DETECTED", circled)
+    cv2.waitKey(0)
+
+
+##############################################################################
+#              IDENTIFY DEAD WORMS WITH DISCONTINUOUS BORDERS                #
 ##############################################################################
 
 def detectDead(binarized):
@@ -225,7 +262,7 @@ def detectDead(binarized):
         ellipse = cv2.fitEllipse(cnt)
         discontinuousPatches = cv2.ellipse(canny, ellipse, (255,255,255), 2)
 
-    cv2.imshow("results", discontinuousPatches)
+    cv2.imshow("ANNOTATED DEAD WORMS", discontinuousPatches)
     cv2.waitKey(0)
 
     return discontinuousPatches
@@ -237,14 +274,19 @@ def detectDead(binarized):
 if __name__ == '__main__':
 
     # TODO: Parse the name of the file to decide which route to take
+
     img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A05_w2_9F329A58-2D6D-42E2-9E6D-E23ACBACE9E0.tif')
 
     # LOAD INTO BINARY
     grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     separatedbackgrounds = processIlluminatedBg(grayscale)
     segmentWithColors(separatedbackgrounds)
+
     # TODO: Get the filename and print it here together
+
     print ("Worms found: " + str(len(getKeypoints(separatedbackgrounds))))
+    # TAKE ONLY THE SURE BACKGROUND
+    identifyCluster(separatedbackgrounds[1])
     try:
         # TAKE ONLY THE SURE FOREGROUND
         detectDead(separatedbackgrounds[0])
@@ -258,6 +300,7 @@ if __name__ == '__main__':
     darkbackground = processDarkBg(grey)
     segmentWithColors(binaryOtsu(darkbackground))
     print("Worms found: " + str(len(getKeypoints(darkbackground))))
+    identifyCluster(binaryOtsu(darkbackground))
     try:
         detectDead(binaryOtsu(darkbackground))
     except UnboundLocalError:

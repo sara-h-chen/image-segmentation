@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import cv2
 import random
 
@@ -148,28 +149,71 @@ kernel = np.ones((2,2), np.uint8)
 #
 # print (len(totalKeypoints))
 
-# trial = cv2.imread('cannysure_bg.png')
-trial = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A13_w1_52E35EC6-FA1E-4F30-A575-F5F7553F95B4.tif')
+trial = cv2.imread('test_file.png')
+# trial = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_C16_w1_62DED874-8F2F-454A-94A8-70897603EED7.tif')
 trial = cv2.cvtColor(trial, cv2.COLOR_RGB2GRAY)
-ret, thresh = cv2.threshold(trial, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-cv2.imshow("binarized", thresh)
-cv2.waitKey(0)
+
+# ret, thresh = cv2.threshold(trial, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+# cv2.imshow("binarized", thresh)
+# cv2.waitKey(0)
 # thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-canny = cv2.Canny(thresh, 100, 200)
+canny = cv2.Canny(trial, 100, 200)
 cv2.imshow("canny2", canny)
 cv2.waitKey(0)
 
-resultingMatrix = img
+corners = cv2.goodFeaturesToTrack(trial, 50, 0.4, 5)
+corners = np.int0(corners)
 
-im2, contours, hierarchy = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+for i in corners:
+    x, y = i.ravel()
+    circled = cv2.circle(canny, (x,y), 3, 255, -1)
 
-for i in range(0, len(contours)):
-    drawn = cv2.drawContours(resultingMatrix, contours, i, (random.randrange(255), random.randrange(255),random.randrange(255)), 3)
-cv2.imshow("contoured", drawn)
+cv2.imshow("corners", circled)
 cv2.waitKey(0)
+#
+#
+# resultingMatrix = img
+#
+# im2, contours, hierarchy = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+#
+# for i in range(0, len(contours)):
+#     drawn = cv2.drawContours(resultingMatrix, contours, i, (random.randrange(255), random.randrange(255),random.randrange(255)), 3)
+# cv2.imshow("contoured", drawn)
+# cv2.waitKey(0)
+# cnt = contours[0]
+# print(cnt)
+# hull = cv2.convexHull(cnt, returnPoints=False)
+# defects = cv2.convexityDefects(cnt, hull)
+# print(defects)
+#
+# for i in range(defects.shape[0]):
+#     s, e, f, d = defects[i,0]
+#     start = tuple(cnt[s][0])
+#     end = tuple(cnt[e][0])
+#     far = tuple(cnt[f][0])
+#     cv2.line(canny, start, end, [255,255,255],2 )
+#     cv2.circle(canny, far, 5, [255,255,255], -1)
+#
 
-for cnt in contours:
-    print(len(cnt))
+# for cnt in contours:
+#     print(cnt[0])
+#     hull = cv2.convexHull(cnt[0], returnPoints=False)
+#     defects = cv2.convexityDefects(cnt, hull)
+#     print(defects)
+#
+#     for i in range(defects.shape[0]):
+#         s, e, f, d = defects[i,0]
+#         start = tuple(cnt[0][s][0])
+#         end = tuple(cnt[0][e][0])
+#         far = tuple(cnt[0][f][0])
+#         cv2.line(canny, start, end, [0,255,0],2 )
+#         cv2.circle(canny, far, 5, [0,0,255], -1)
+#
+# cv2.imshow("hulled", canny)
+# cv2.waitKey(0)
+#
+#
+#     print(len(cnt))
 
     # countLiveWorms = 0
     #
@@ -179,37 +223,37 @@ for cnt in contours:
     # if len(cnt) < 100:
     #     continue
 
-    if not 10 < len(cnt) < 100:
-        continue
-
-    ellipse = cv2.fitEllipse(cnt)
-    drawn = cv2.ellipse(canny, ellipse, (255,255,0),2)
-cv2.imshow("Ellipsed", drawn)
-cv2.waitKey(0)
-    # print(countLiveWorms)
-
+    # if not 10 < len(cnt) < 100:
+    #     continue
+    #
+    # ellipse = cv2.fitEllipse(cnt)
+    # drawn = cv2.ellipse(canny, ellipse, (255,255,0),2)
+# cv2.imshow("Ellipsed", drawn)
+# cv2.waitKey(0)
+#     print(countLiveWorms)
+#
 # surf = cv2.xfeatures2d.SURF_create(15000)
 # kp, des = surf.detectAndCompute(thresh, None)
 # print(len(kp))
-
+#
 # img2 = cv2.drawKeypoints(thresh, kp, None, (255,0,0), 4)
 # cv2.imshow("plotted", img2)
 # cv2.waitKey(0)
-
+#
 # kp2, des2 = surf.detectAndCompute(sure_fg, None)
 # img3 = cv2.drawKeypoints(sure_fg, kp2, None, (255,0,0), 4)
 # cv2.imshow("on borders", img3)
 # cv2.waitKey(0)
-
+#
 # test = cv2.imread('test_file.png')
 # test = cv2.cvtColor(test, cv2.COLOR_RGB2GRAY)
 # canny_test = cv2.Canny(test, 100, 200)
 # cv2.imshow("contoured", canny_test)
 # cv2.waitKey(0)
-
+#
 # minLineLength = 5000
 # maxLineGap = 10
-
+#
 # try:
 #     lines = cv2.HoughLinesP(canny_test, 1, np.pi/180, 30, 100, 20)
 #     for x in range(0, len(lines)):
@@ -220,4 +264,17 @@ cv2.waitKey(0)
 #
 # cv2.imshow("lines", canny_test)
 # cv2.waitKey(0)
-#
+
+
+for a in corners:
+    for b in corners:
+        # print a[0][0]
+        # print b[0][1]
+        if 0 < math.sqrt((a[0][0] - b[0][0])*(a[0][0] - b[0][0]) + (a[0][1] - b[0][1])*(a[0][1] - b[0][1])) < 10:
+            midX = (a[0][0] + b[0][0]) / 2
+            midY = (a[0][1] + b[0][1]) / 2
+            cv2.circle(circled, (midX, midY), 15, (255, 255, 255))
+            print (str(a[0]) + ' ' + str(b[0]) + ' show two worms intersecting')
+
+cv2.imshow("circled", circled)
+cv2.waitKey(0)
