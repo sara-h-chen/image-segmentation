@@ -1,9 +1,13 @@
 #################################################################################
-#  # TODO: Fill up documentation here
-#
+#  ACCEPTS FILES AS ARGUMENTS. READS AND PROCESSES THE IMAGE BY REMOVING THE    #
+#  BACKGROUND, THEN DETECTING THE REMAINING CONTOURS TO IDENTIFY WORMS. WORMS   #
+#  ARE LABELLED AND COUNTED. INFORMATION ON CLUSTERS ARE EXTRACTED FROM THE     #
+#  CORNERS IN THE IMAGE. DEAD WORMS ARE ANNOTATED, BASED ON THEIR TEXTURE.      #
 # ----------------------------------------------------------------------------- #
 # REFERENCES: http://docs.opencv.org/trunk/d3/db4/tutorial_py_watershed.html    #
 #             https://www.learnopencv.com/blob-detection-using-opencv-python-c/ #
+#             http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/    #
+#             py_shi_tomasi/py_shi_tomasi.html                                  #
 #################################################################################
 
 import numpy as np
@@ -272,6 +276,8 @@ def detectDead(binarized):
 ############################################################################
 
 if __name__ == '__main__':
+
+
 
     # TODO: Parse the name of the file to decide which route to take
 

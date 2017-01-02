@@ -1,11 +1,11 @@
 import argparse
 
-parser = argparse.ArgumentParser(description="Carries out image segmentation based on shape and blob detection")
-parser.add_argument('--foo', help=('foo help'))
+parser = argparse.ArgumentParser(description="Processes the image supplied to detect worms. "
+                                             "WARNING: Naming convention of file based on image channel must remain consistent")
+parser.add_argument("file", help=("The file for processing"))
+parser.add_argument("-v", "--verbose", help=("Displays all steps in the process; increases output verbosity"), action="store_true")
 
-# >>> parser.add_argument('integers', metavar='N', type=int, nargs='+',
-# ...                     help='an integer for the accumulator')
-# >>> parser.add_argument('--sum', dest='accumulate', action='store_const',
-# ...                     const=sum, default=max,
-# ...                     help='sum the integers (default: find the max)')
-# Later, calling parse_args() will return an object with two attributes, integers and accumulate. The integers attribute will be a list of one or more ints, and the accumulate attribute will be either the sum() function, if --sum was specified at the command line, or the max() function if it was not.
+# RETURNS ARGUMENT AS args.file
+args = parser.parse_args()
+# if args.verbose:
+#     print args.verbose
