@@ -1,26 +1,39 @@
-#################################################################################
-#  ALL GROUND TRUTH IMAGES OF INDIVIDUAL WORMS SHOULD BE PLACED INTO THE        #
-#  ground_truth FOLDER SO THAT COMPARISONS CAN BE MADE. ALL IMAGES USED TO      #
-#  PRODUCE/TEST THIS ALGORITHM IS SUPPLIED IN THE SAME FOLDER. THE ALGORITHM    #
-#  ACCEPTS FILES SUBMITTED TO IT AS PARAMETERS BUT MAY DETECT WORMS, COUNT AND  #
-#  CLASSIFY THEM WITH LESS ACCURACY.                                            #
-#                                                                               #
-#  Accepts files as arguments. Reads and processes the image by removing the    #
-#  background, then detecting the remaining contours to identify worms. Worms   #
-#  are labelled and counted. Information on clusters are extracted from the     #
-#  corners in the image. Dead worms are annotated, based on their texture.      #
-# ----------------------------------------------------------------------------- #
-# REFERENCES: http://docs.opencv.org/trunk/d3/db4/tutorial_py_watershed.html    #
-#             https://www.learnopencv.com/blob-detection-using-opencv-python-c/ #
-#             http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/    #
-#             py_shi_tomasi/py_shi_tomasi.html                                  #
-#################################################################################
+####################################################################################
+#  ALL GROUND TRUTH IMAGES OF INDIVIDUAL WORMS SHOULD BE PLACED INTO THE           #
+#  ground_truth FOLDER SO THAT COMPARISONS CAN BE MADE. THE GROUND TRUTH IMAGE     #
+#  WITH ALL THE WORMS COMBINED SHOULD BE SUPPLIED AS A PARAMETER. ALL IMAGES USED  #
+#  TO PRODUCE/TEST THIS ALGORITHM IS SUPPLIED IN THE SAME FOLDER. THE ALGORITHM    #
+#  ACCEPTS FILES SUBMITTED TO IT AS PARAMETERS BUT MAY DETECT WORMS, COUNT AND     #
+#  CLASSIFY THEM WITH LESS ACCURACY.                                               #
+#                                                                                  #
+#  Accepts files as arguments. Reads and processes the image by removing the       #
+#  background, then detecting the remaining contours to identify worms. Worms      #
+#  are labelled and counted. Information on clusters/overlap are extracted from    #
+#  corners in the image. Dead worms are annotated, based on their texture. The     #
+#  results are then compared with the ground truth files placed in the folder.     #
+#                                                                                  #
+# -------------------------------------------------------------------------------- #
+#                                                                                  #
+#  TO TRIGGER THE COMPARE FUNCTIONALITY, THE FOLLOWING ARGUMENTS ARE REQUIRED:     #
+#  --compare, --groundtruth                                                        #
+#                                                                                  #
+#  Example:                                                                        #
+#  python image-processing.py __IMAGE__.tif --compare --groundtruth __TRUTH__.png  #
+#                                                                                  #
+# -------------------------------------------------------------------------------- #
+#                                                                                  #
+# REFERENCES: http://docs.opencv.org/trunk/d3/db4/tutorial_py_watershed.html       #
+#             https://www.learnopencv.com/blob-detection-using-opencv-python-c/    #
+#             http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/       #
+#             py_shi_tomasi/py_shi_tomasi.html                                     #
+####################################################################################
 
 import numpy as np
 import math
 import random
 import argparse
 import re
+import os
 import cv2
 
 
@@ -160,6 +173,7 @@ def segmentWithColors(backgrounds):
 
     contours, hierarchy = cv2.findContours(clearEdges, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
+    # DRAW ON EDGES WITH DIFFERENT COLORS
     for i in range(0, len(contours)):
         cv2.drawContours(coloredComponents, contours, i, (random.randrange(255), random.randrange(255), random.randrange(255)), 3)
 
@@ -210,7 +224,7 @@ def getKeypoints(backgrounds):
     light_on_dark_keypoints = cv2.drawKeypoints(inverseForConvexity, totalKeypoints, np.array([]), (0, 0, 255),
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-    # UNCOMMENT HERE TO SHOW KEYPOINTS
+    # SHOW KEYPOINTS
     cv2.imshow("WORMS DETECTED USING KEYPOINTS", dark_on_light_keypoints)
     cv2.waitKey(0)
     cv2.imshow("IMAGE INVERSED TO FILTER FOR CONVEXITY", light_on_dark_keypoints)
@@ -257,7 +271,8 @@ def identifyCluster(binarized):
                 midpointX = (a[0][0] + b[0][0]) / 2
                 midpointY = (a[0][1] + b[0][1]) / 2
                 cv2.circle(canny, (midpointX, midpointY), 15, (255,255,255))
-                print ("CLOSE CORNERS: " + str(a[0]) + " & " + str(b[0]) + " suggests two worms are intersecting")
+                if args.verbose:
+                    print ("CLOSE CORNERS: " + str(a[0]) + " & " + str(b[0]) + " suggests two worms are intersecting")
 
     cv2.imshow("INTERSECTIONS DETECTED", canny)
     cv2.waitKey(0)
@@ -286,6 +301,62 @@ def detectDead(binarized):
 
     return canny
 
+
+#################################################################################
+#  ALL GROUND TRUTH IMAGES OF INDIVIDUAL WORMS SHOULD BE PLACED IN THE          #
+#  ground_truth FOLDER. THE BINARY IMAGE OF THE GROUND TRUTH IMAGE CONTAINING   #
+#  ALL THE WORMS IN A SINGLE PICTURE MUST BE PASSED INTO THIS SCRIPT AS AN      #
+#  ARGUMENT ON THE COMMAND LINE.                                                #
+#                                                                               #
+#  Compares the results from the worm detection algorithm to the ground truth   #
+#  images supplied. Runs separately from the main algorithm, i.e. comparisons   #
+#  will be made only when the --compare flag has been set.                      #
+#################################################################################
+
+def compareWithGroundTruth(argument, backgrounds):
+
+    if len(backgrounds) == 2:
+        sure_bg = backgrounds[1]
+    else:
+        sure_bg = backgrounds
+
+    # GETS THE FOLDER WITH ALL INDIVIDUAL GROUND TRUTH IMAGES
+    dir_path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ground_truth'))
+
+    # LISTS ALL THE FILES IN THE FOLDER WITH INDIVIDUAL GROUND TRUTH IMAGES
+    allFiles = [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))]
+    if args.verbose:
+        print ("Files in ground_truth:")
+        print (allFiles)
+
+    # COMPULSORY ARGUMENT; READ GROUND TRUTH WITH ALL WORMS
+    grdTrthAll = cv2.imread(argument)
+    grdTrthAll = cv2.cvtColor(grdTrthAll, cv2.COLOR_BGR2GRAY)
+
+    # FINDS THE ABSOLUTE DIFFERENCE BETWEEN GROUND TRUTH AND POST-PROCESSED IMAGE
+    deduct = cv2.absdiff(sure_bg, grdTrthAll)
+    if args.verbose:
+        cv2.imshow("ABSOLUTE DIFFERENCE", deduct)
+        cv2.waitKey(0)
+
+    coloredPixels = cv2.countNonZero(deduct)
+    if args.verbose:
+        print ("The size of the absolute difference: " + str(coloredPixels))
+        print ("The size of the image: " + str(grdTrthAll.size))
+
+    # CALCULATES THE PERCENTAGE OF ABSOLUTE DIFFERENCE
+    errorRate = (coloredPixels / float(grdTrthAll.size)) * 100
+    print ("Error rate: {0:.2f}%".format(errorRate))
+    if args.verbose:
+        if len(backgrounds) == 2 and errorRate > 15:
+            print ("NOTE: The high error rate may have been caused by the creation of borders when performing background separation")
+
+    # COUNTS THE NUMBER OF WORMS IN GROUND TRUTH
+    print ("The number of worms based on ground truth: " + str(len(allFiles)))
+
+    return len(allFiles)
+
+
 ############################################################################
 #                             MAIN METHOD                                  #
 ############################################################################
@@ -295,12 +366,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Processes the image supplied to detect worms. "
                                                  "WARNING: Naming convention of file based on image channel must remain consistent, with _w1_ indicating images with a dark background (no background) and _w2_ indicating images with an illuminated background.")
     parser.add_argument("file", help=("The raw file for processing"))
-    # parser.add_argument("groundtruth", help=("The ground truth image with all the worms in binary"))
     parser.add_argument("-v", "--verbose", help=("Displays all steps in the process; increases output verbosity"),
                         action="store_true")
+    parser.add_argument("--compare", help=("Turns on the comparison function. WARNING: Requires the ground truth of individual worms to be placed into the ground_truth folder. The binary image of the ground truth with all worms must be supplied as an argument after this flag."), action="store_true")
+    parser.add_argument("--groundtruth", help=("The ground truth image with all worms"))
 
-    # RETURNS ARGUMENT AS args.file
+    # RETURNS ARGUMENT AS args.*argument*
     args = parser.parse_args()
+
+    if args.compare and args.groundtruth is None:
+        parser.error("--compare requires --groundtruth")
 
     # CHECK FOR IMAGE CHANNEL
     w1 = re.compile(r'\ww1\w')
@@ -312,12 +387,20 @@ if __name__ == '__main__':
         grey = cv2.cvtColor(imgdark, cv2.COLOR_BGR2GRAY)
         darkbackground = processDarkBg(grey)
         segmentWithColors(binaryOtsu(darkbackground))
-        print("Worms found in '" + args.file + "': " + str(len(getKeypoints(darkbackground))))
+        keypoints = getKeypoints(darkbackground)
+
+        print("Worms found in '" + args.file + "': " + str(len(keypoints)))
         identifyCluster(binaryOtsu(darkbackground))
         try:
             detectDead(binaryOtsu(darkbackground))
         except UnboundLocalError:
             print("No dead worms found")
+
+        groundTruth = compareWithGroundTruth(args.groundtruth, binaryOtsu(darkbackground))
+        print ("The difference in number of worms detected: " + str(abs(groundTruth - len(keypoints))))
+        if args.verbose:
+            error_rate = (abs(groundTruth - len(keypoints)) / float(groundTruth)) * 100
+            print ("The error rate: {0:.2f}%".format(error_rate))
 
     elif w2.search(args.file):
         img = cv2.imread(args.file)
@@ -326,8 +409,9 @@ if __name__ == '__main__':
         grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         separatedbackgrounds = processIlluminatedBg(grayscale)
         segmentWithColors(separatedbackgrounds)
+        keypoints = getKeypoints(separatedbackgrounds)
 
-        print ("Worms found in '" + args.file + "': " + str(len(getKeypoints(separatedbackgrounds))))
+        print ("Worms found in '" + args.file + "': " + str(len(keypoints)))
         # TAKE ONLY THE SURE BACKGROUND
         identifyCluster(separatedbackgrounds[1])
         try:
@@ -336,5 +420,10 @@ if __name__ == '__main__':
         except UnboundLocalError:
             print("No dead worms found")
 
+        groundTruth = compareWithGroundTruth(args.groundtruth, separatedbackgrounds)
+        print ("The difference in number of worms detected: " + str(abs(groundTruth - len(keypoints))))
+        if args.verbose:
+            error_rate = (abs(groundTruth - len(keypoints)) / float(groundTruth)) * 100
+            print ("The error rate: {0:.2f}%".format(error_rate))
     else:
         print("FAILED: Naming convention of file not followed.")
