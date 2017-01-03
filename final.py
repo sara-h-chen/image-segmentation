@@ -144,12 +144,12 @@ def segmentWithColors(backgrounds):
     # TURN IMAGE BACK INTO COLOR IMAGE
     coloredComponents = cv2.cvtColor(clearEdges, cv2.COLOR_GRAY2BGR)
 
-    image, contours, hierarchy = cv2.findContours(clearEdges, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv2.findContours(clearEdges, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
     for i in range(0, len(contours)):
-        drawn = cv2.drawContours(coloredComponents, contours, i, (random.randrange(255), random.randrange(255), random.randrange(255)), 3)
+        cv2.drawContours(coloredComponents, contours, i, (random.randrange(255), random.randrange(255), random.randrange(255)), 3)
 
-    cv2.imshow("SEGMENTATION WITH COLORED CONTOURS", drawn)
+    cv2.imshow("SEGMENTATION WITH COLORED CONTOURS", coloredComponents)
     cv2.waitKey(0)
 
 
@@ -229,9 +229,9 @@ def identifyCluster(binarized):
 
     for i in corners:
         x, y = i.ravel()
-        circled = cv2.circle(canny, (x, y), 3, 255, -1)
+        cv2.circle(canny, (x, y), 3, 255, -1)
 
-    cv2.imshow("IDENTIFIED CORNERS", circled)
+    cv2.imshow("IDENTIFIED CORNERS", canny)
     cv2.waitKey(0)
 
     # GET DISTANCE BETWEEN IDENTIFIED CORNERS
@@ -241,10 +241,10 @@ def identifyCluster(binarized):
             if 0 < math.sqrt(((a[0][0] - b[0][0]) * (a[0][0] - b[0][0])) + ((a[0][1] - b[0][1]) * (a[0][1] - b[0][1]))) < 10:
                 midpointX = (a[0][0] + b[0][0]) / 2
                 midpointY = (a[0][1] + b[0][1]) / 2
-                cv2.circle(circled, (midpointX, midpointY), 15, (255,255,255))
+                cv2.circle(canny, (midpointX, midpointY), 15, (255,255,255))
                 print ("CLOSE CORNERS: " + str(a[0]) + " & " + str(b[0]) + " suggests two worms are intersecting")
 
-    cv2.imshow("INTERSECTIONS DETECTED", circled)
+    cv2.imshow("INTERSECTIONS DETECTED", canny)
     cv2.waitKey(0)
 
 
@@ -256,7 +256,7 @@ def detectDead(binarized):
 
     canny = cv2.Canny(binarized, 100, 200)
     # IDENTIFY ALL BORDERS IN THE CANNY IMAGE
-    im2, contours, hierarchy = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
     for cnt in contours:
         # IGNORE WORMS WITH CONTINUOUS BORDERS & NOISE BLOBS
@@ -264,12 +264,12 @@ def detectDead(binarized):
             continue
 
         ellipse = cv2.fitEllipse(cnt)
-        discontinuousPatches = cv2.ellipse(canny, ellipse, (255,255,255), 2)
+        cv2.ellipse(canny, ellipse, (255,255,255), 2)
 
-    cv2.imshow("ANNOTATED DEAD WORMS", discontinuousPatches)
+    cv2.imshow("ANNOTATED DEAD WORMS", canny)
     cv2.waitKey(0)
 
-    return discontinuousPatches
+    return canny
 
 ############################################################################
 #                             MAIN METHOD                                  #
