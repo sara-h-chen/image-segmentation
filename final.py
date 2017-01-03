@@ -1,8 +1,14 @@
 #################################################################################
-#  ACCEPTS FILES AS ARGUMENTS. READS AND PROCESSES THE IMAGE BY REMOVING THE    #
-#  BACKGROUND, THEN DETECTING THE REMAINING CONTOURS TO IDENTIFY WORMS. WORMS   #
-#  ARE LABELLED AND COUNTED. INFORMATION ON CLUSTERS ARE EXTRACTED FROM THE     #
-#  CORNERS IN THE IMAGE. DEAD WORMS ARE ANNOTATED, BASED ON THEIR TEXTURE.      #
+#  ALL GROUND TRUTH IMAGES OF INDIVIDUAL WORMS SHOULD BE PLACED INTO THE        #
+#  ground_truth FOLDER SO THAT COMPARISONS CAN BE MADE. ALL IMAGES USED TO      #
+#  PRODUCE/TEST THIS ALGORITHM IS SUPPLIED IN THE SAME FOLDER. THE ALGORITHM    #
+#  ACCEPTS FILES SUBMITTED TO IT AS PARAMETERS BUT MAY DETECT WORMS, COUNT AND  #
+#  CLASSIFY THEM WITH LESS ACCURACY.                                            #
+#                                                                               #
+#  Accepts files as arguments. Reads and processes the image by removing the    #
+#  background, then detecting the remaining contours to identify worms. Worms   #
+#  are labelled and counted. Information on clusters are extracted from the     #
+#  corners in the image. Dead worms are annotated, based on their texture.      #
 # ----------------------------------------------------------------------------- #
 # REFERENCES: http://docs.opencv.org/trunk/d3/db4/tutorial_py_watershed.html    #
 #             https://www.learnopencv.com/blob-detection-using-opencv-python-c/ #
@@ -13,6 +19,8 @@
 import numpy as np
 import math
 import random
+import argparse
+import re
 import cv2
 
 
@@ -114,13 +122,17 @@ def removeNoiseBlobs(inverse):
 
     # ERODE THE REMAINING NOISE BLOBS AND GET THE CONFIRMED FOREGROUND
     sure_fg = cv2.erode(inverse, kernel, iterations=2)
-    # cv2.imshow("SURE FOREGROUND", sure_fg)
-    # cv2.waitKey(0)
+
+    if args.verbose:
+        cv2.imshow("SURE FOREGROUND", sure_fg)
+        cv2.waitKey(0)
 
     # DILATE THE REMAINING SHAPES TO FACILITATE SHAPE DETECTION
     sure_bg = cv2.dilate(sure_fg, kernel, iterations=3)
-    # cv2.imshow("SURE BACKGROUND", sure_bg)
-    # cv2.waitKey(0)
+
+    if args.verbose:
+        cv2.imshow("SURE BACKGROUND", sure_bg)
+        cv2.waitKey(0)
 
     return (sure_fg, sure_bg)
 
@@ -134,12 +146,14 @@ def segmentWithColors(backgrounds):
     # IF DARK BACKGROUND, APPLY OTSU'S BINARIZATION
     if len(backgrounds) == 2:
         clearEdges = cv2.Canny(backgrounds[1], 100, 200)
-        # cv2.imshow("EDGES AFTER CANNY", clearEdges)
-        # cv2.waitKey(0)
+        if args.verbose:
+            cv2.imshow("EDGES AFTER CANNY", clearEdges)
+            cv2.waitKey(0)
     else:
         clearEdges = cv2.Canny(backgrounds, 100, 200)
-        # cv2.imshow("OTSU BINARIZATION APPLIED", clearEdges)
-        # cv2.waitKey(0)
+        if args.verbose:
+            cv2.imshow("OTSU BINARIZATION APPLIED", clearEdges)
+            cv2.waitKey(0)
 
     # TURN IMAGE BACK INTO COLOR IMAGE
     coloredComponents = cv2.cvtColor(clearEdges, cv2.COLOR_GRAY2BGR)
@@ -197,7 +211,7 @@ def getKeypoints(backgrounds):
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
     # UNCOMMENT HERE TO SHOW KEYPOINTS
-    cv2.imshow("KEYPOINTS", dark_on_light_keypoints)
+    cv2.imshow("WORMS DETECTED USING KEYPOINTS", dark_on_light_keypoints)
     cv2.waitKey(0)
     cv2.imshow("IMAGE INVERSED TO FILTER FOR CONVEXITY", light_on_dark_keypoints)
     cv2.waitKey(0)
@@ -231,8 +245,9 @@ def identifyCluster(binarized):
         x, y = i.ravel()
         cv2.circle(canny, (x, y), 3, 255, -1)
 
-    cv2.imshow("IDENTIFIED CORNERS", canny)
-    cv2.waitKey(0)
+    if args.verbose:
+        cv2.imshow("IDENTIFIED CORNERS", canny)
+        cv2.waitKey(0)
 
     # GET DISTANCE BETWEEN IDENTIFIED CORNERS
     # IF CORNERS ARE CLOSE, THEY ARE LIKELY TO BE INTERSECTION POINTS
@@ -277,37 +292,49 @@ def detectDead(binarized):
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser(description="Processes the image supplied to detect worms. "
+                                                 "WARNING: Naming convention of file based on image channel must remain consistent, with _w1_ indicating images with a dark background (no background) and _w2_ indicating images with an illuminated background.")
+    parser.add_argument("file", help=("The raw file for processing"))
+    # parser.add_argument("groundtruth", help=("The ground truth image with all the worms in binary"))
+    parser.add_argument("-v", "--verbose", help=("Displays all steps in the process; increases output verbosity"),
+                        action="store_true")
 
+    # RETURNS ARGUMENT AS args.file
+    args = parser.parse_args()
 
-    # TODO: Parse the name of the file to decide which route to take
+    # CHECK FOR IMAGE CHANNEL
+    w1 = re.compile(r'\ww1\w')
+    w2 = re.compile(r'\ww2\w')
 
-    img = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A05_w2_9F329A58-2D6D-42E2-9E6D-E23ACBACE9E0.tif')
+    if w1.search(args.file):
+        imgdark = cv2.imread(args.file)
 
-    # LOAD INTO BINARY
-    grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    separatedbackgrounds = processIlluminatedBg(grayscale)
-    segmentWithColors(separatedbackgrounds)
+        grey = cv2.cvtColor(imgdark, cv2.COLOR_BGR2GRAY)
+        darkbackground = processDarkBg(grey)
+        segmentWithColors(binaryOtsu(darkbackground))
+        print("Worms found in '" + args.file + "': " + str(len(getKeypoints(darkbackground))))
+        identifyCluster(binaryOtsu(darkbackground))
+        try:
+            detectDead(binaryOtsu(darkbackground))
+        except UnboundLocalError:
+            print("No dead worms found")
 
-    # TODO: Get the filename and print it here together
+    elif w2.search(args.file):
+        img = cv2.imread(args.file)
 
-    print ("Worms found: " + str(len(getKeypoints(separatedbackgrounds))))
-    # TAKE ONLY THE SURE BACKGROUND
-    identifyCluster(separatedbackgrounds[1])
-    try:
-        # TAKE ONLY THE SURE FOREGROUND
-        detectDead(separatedbackgrounds[0])
-    except UnboundLocalError:
-        print("No dead worms found")
+        # LOAD INTO BINARY
+        grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        separatedbackgrounds = processIlluminatedBg(grayscale)
+        segmentWithColors(separatedbackgrounds)
 
+        print ("Worms found in '" + args.file + "': " + str(len(getKeypoints(separatedbackgrounds))))
+        # TAKE ONLY THE SURE BACKGROUND
+        identifyCluster(separatedbackgrounds[1])
+        try:
+            # TAKE ONLY THE SURE FOREGROUND
+            detectDead(separatedbackgrounds[0])
+        except UnboundLocalError:
+            print("No dead worms found")
 
-    imgdark = cv2.imread('1649_1109_0003_Amp5-1_B_20070424_A01_w1_9E84F49F-1B25-4E7E-8040-D1BB2D7E73EA.tif')
-
-    grey = cv2.cvtColor(imgdark, cv2.COLOR_BGR2GRAY)
-    darkbackground = processDarkBg(grey)
-    segmentWithColors(binaryOtsu(darkbackground))
-    print("Worms found: " + str(len(getKeypoints(darkbackground))))
-    identifyCluster(binaryOtsu(darkbackground))
-    try:
-        detectDead(binaryOtsu(darkbackground))
-    except UnboundLocalError:
-        print("No dead worms found")
+    else:
+        print("FAILED: Naming convention of file not followed.")
