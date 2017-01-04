@@ -306,7 +306,7 @@ def detectDead(binarized):
 #  ALL GROUND TRUTH IMAGES OF INDIVIDUAL WORMS SHOULD BE PLACED IN THE          #
 #  ground_truth FOLDER. THE BINARY IMAGE OF THE GROUND TRUTH IMAGE CONTAINING   #
 #  ALL THE WORMS IN A SINGLE PICTURE MUST BE PASSED INTO THIS SCRIPT AS AN      #
-#  ARGUMENT ON THE COMMAND LINE.                                                #
+#  ARGUMENT ON THE COMMAND LINE. TURN ON VERBOSITY FOR IMPORTANT INFORMATION.   #
 #                                                                               #
 #  Compares the results from the worm detection algorithm to the ground truth   #
 #  images supplied. Runs separately from the main algorithm, i.e. comparisons   #
@@ -366,7 +366,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Processes the image supplied to detect worms. "
                                                  "WARNING: Naming convention of file based on image channel must remain consistent, with _w1_ indicating images with a dark background (no background) and _w2_ indicating images with an illuminated background.")
     parser.add_argument("file", help=("The raw file for processing"))
-    parser.add_argument("-v", "--verbose", help=("Displays all steps in the process; increases output verbosity"),
+    parser.add_argument("-v", "--verbose", help=("Displays all steps in the process; increases output verbosity. WARNING: Turn on verbosity with comparison functionality for important information."),
                         action="store_true")
     parser.add_argument("--compare", help=("Turns on the comparison function. WARNING: Requires the ground truth of individual worms to be placed into the ground_truth folder. The binary image of the ground truth with all worms must be supplied as an argument after this flag."), action="store_true")
     parser.add_argument("--groundtruth", help=("The ground truth image with all worms"))
