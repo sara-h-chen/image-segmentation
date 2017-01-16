@@ -224,20 +224,31 @@ def getKeypoints(backgrounds):
     light_on_dark_keypoints = cv2.drawKeypoints(inverseForConvexity, totalKeypoints, np.array([]), (0, 0, 255),
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-    # SHOW KEYPOINTS
-    cv2.imshow("WORMS DETECTED USING KEYPOINTS", dark_on_light_keypoints)
-    cv2.waitKey(0)
-    cv2.imshow("IMAGE INVERSED TO FILTER FOR CONVEXITY", light_on_dark_keypoints)
-    cv2.waitKey(0)
-
     # MERGE THE TWO KEYPOINT SETS
     for key in keypointsOnLight:
         if key not in totalKeypoints:
             totalKeypoints.append(key)
 
-    # SHOW COMBINED KEYPOINTS
-    all_keypoints = cv2.drawKeypoints(sure_fg, totalKeypoints, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-    cv2.imshow("ALL COMBINED", all_keypoints)
+    if args.verbose:
+        # SHOW KEYPOINTS
+        cv2.imshow("WORMS DETECTED USING KEYPOINTS", dark_on_light_keypoints)
+        cv2.waitKey(0)
+        cv2.imshow("IMAGE INVERSED TO FILTER FOR CONVEXITY", light_on_dark_keypoints)
+        cv2.waitKey(0)
+
+        # SHOW COMBINED KEYPOINTS
+        all_keypoints = cv2.drawKeypoints(sure_fg, totalKeypoints, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        cv2.imshow("ALL COMBINED", all_keypoints)
+        cv2.waitKey(0)
+
+    clonedImage = sure_fg.copy()
+    clonedImage = cv2.cvtColor(clonedImage, cv2.COLOR_GRAY2BGR)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    for i in range(0, len(totalKeypoints)):
+        x = int(totalKeypoints[i].pt[0])
+        y = int(totalKeypoints[i].pt[1])
+        cv2.putText(clonedImage, str(i+1), (x,y), font, 1, (random.randrange(255), random.randrange(255), random.randrange(255)), 3, cv2.CV_AA)
+    cv2.imshow("LABELLED WORMS", clonedImage)
     cv2.waitKey(0)
 
     # LABEL EACH KEYPOINT AS DISTINCT OBJECT
