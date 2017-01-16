@@ -235,8 +235,14 @@ def getKeypoints(backgrounds):
         if key not in totalKeypoints:
             totalKeypoints.append(key)
 
+    # SHOW COMBINED KEYPOINTS
+    all_keypoints = cv2.drawKeypoints(sure_fg, totalKeypoints, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    cv2.imshow("ALL COMBINED", all_keypoints)
+    cv2.waitKey(0)
+
     # LABEL EACH KEYPOINT AS DISTINCT OBJECT
     for i in range(0, len(totalKeypoints)):
+        print ("Keypoint " + str(totalKeypoints[i].pt) + " labelled: " + str(i + 1))
         totalKeypoints[i].class_id = i + 1
 
     return totalKeypoints
