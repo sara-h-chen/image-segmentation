@@ -413,11 +413,12 @@ if __name__ == '__main__':
         except UnboundLocalError:
             print("No dead worms found")
 
-        groundTruth = compareWithGroundTruth(args.groundtruth, binaryOtsu(darkbackground))
-        print ("The difference in number of worms detected: " + str(abs(groundTruth - len(keypoints))))
-        if args.verbose:
-            error_rate = (abs(groundTruth - len(keypoints)) / float(groundTruth)) * 100
-            print ("The error rate: {0:.2f}%".format(error_rate))
+        if args.compare:
+            groundTruth = compareWithGroundTruth(args.groundtruth, binaryOtsu(darkbackground))
+            print ("The difference in number of worms detected: " + str(abs(groundTruth - len(keypoints))))
+            if args.verbose:
+                error_rate = (abs(groundTruth - len(keypoints)) / float(groundTruth)) * 100
+                print ("The error rate: {0:.2f}%".format(error_rate))
 
     elif w2.search(args.file):
         img = cv2.imread(args.file)
@@ -437,10 +438,11 @@ if __name__ == '__main__':
         except UnboundLocalError:
             print("No dead worms found")
 
-        groundTruth = compareWithGroundTruth(args.groundtruth, separatedbackgrounds)
-        print ("The difference in number of worms detected: " + str(abs(groundTruth - len(keypoints))))
-        if args.verbose:
-            error_rate = (abs(groundTruth - len(keypoints)) / float(groundTruth)) * 100
-            print ("The error rate: {0:.2f}%".format(error_rate))
+        if args.compare:
+            groundTruth = compareWithGroundTruth(args.groundtruth, separatedbackgrounds)
+            print ("The difference in number of worms detected: " + str(abs(groundTruth - len(keypoints))))
+            if args.verbose:
+                error_rate = (abs(groundTruth - len(keypoints)) / float(groundTruth)) * 100
+                print ("The error rate: {0:.2f}%".format(error_rate))
     else:
         print("FAILED: Naming convention of file not followed.")
